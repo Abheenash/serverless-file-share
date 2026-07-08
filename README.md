@@ -6,8 +6,6 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 
 ## Screenshots
 
-> Add PNGs to [`docs/screenshots/`](docs/screenshots/) (see that folder's README for filenames) and they render here.
-
 | Upload | Share link | Expiry |
 |---|---|---|
 | ![UI](docs/screenshots/01-ui.png) | ![Share link](docs/screenshots/02-share-link.png) | ![Expired](docs/screenshots/03-expired.png) |
