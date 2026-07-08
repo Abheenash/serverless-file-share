@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Serverless File Share — self-destructing links</title>
+  <style>
+    :root { --bg:#0f1117; --card:#1a1d27; --accent:#5b8cff; --text:#e6e8ee; --muted:#8b90a0; --ok:#3fb950; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--text);
+           display:flex; min-height:100vh; align-items:center; justify-content:center; padding:1.5rem; }
+    .card { background:var(--card); border:1px solid #262a36; border-radius:14px; padding:2rem;
+            width:100%; max-width:460px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+    h1 { font-size:1.35rem; margin:0 0 .25rem; }
+    p.sub { color:var(--muted); margin:0 0 1.5rem; font-size:.9rem; }
+    label { display:block; font-size:.8rem; color:var(--muted); margin:1rem 0 .35rem; text-transform:uppercase; letter-spacing:.04em; }
+    input[type=file], select { width:100%; padding:.7rem; background:#0f1117; color:var(--text);
+            border:1px solid #2b3040; border-radius:8px; font-size:.95rem; }
+    button { width:100%; margin-top:1.5rem; padding:.8rem; border:0; border-radius:8px; cursor:pointer;
+             background:var(--accent); color:#fff; font-size:1rem; font-weight:600; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    #result { margin-top:1.5rem; display:none; }
+    .link-row { display:flex; gap:.5rem; }
+    .link-row input { flex:1; padding:.6rem; background:#0f1117; color:var(--ok); border:1px solid #2b3040; border-radius:8px; font-size:.85rem; }
+    .link-row button { width:auto; margin:0; padding:.6rem .9rem; background:#2b3040; }
+    .meta { color:var(--muted); font-size:.8rem; margin-top:.6rem; }
+    .status { margin-top:1rem; font-size:.9rem; color:var(--muted); min-height:1.2em; }
+    .status.err { color:#f85149; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔥 Serverless File Share</h1>
+    <p class="sub">Upload a file, get a link that self-destructs. Encrypted at rest; nothing lingers.</p>
+
+    <label for="file">File</label>
+    <input type="file" id="file" />
+
+    <label for="expiry">Link lifetime</label>
+    <select id="expiry">
+      <option value="900">15 minutes</option>
+      <option value="3600" selected>1 hour</option>
+      <option value="86400">1 day</option>
+      <option value="604800">7 days</option>
+    </select>
+
+    <button id="go">Create share link</button>
+    <div class="status" id="status"></div>
+
+    <div id="result">
+      <label>Share link</label>
+      <div class="link-row">
+        <input id="shareLink" readonly />
+        <button id="copy">Copy</button>
+      </div>
+      <div class="meta" id="expiryNote"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
