@@ -4,6 +4,14 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 
 **Status:** ✅ All stages complete — full IaC + CI/CD ([docs/stage5.md](docs/stage5.md)). See the [architecture diagram](docs/architecture.md). Built in public.
 
+## Screenshots
+
+> Add PNGs to [`docs/screenshots/`](docs/screenshots/) (see that folder's README for filenames) and they render here.
+
+| Upload | Share link | Expiry |
+|---|---|---|
+| ![UI](docs/screenshots/01-ui.png) | ![Share link](docs/screenshots/02-share-link.png) | ![Expired](docs/screenshots/03-expired.png) |
+
 ## Why this project
 
 A small, real product that demonstrates security-first serverless architecture: least-privilege IAM, KMS encryption, short-lived access via presigned URLs, and a fully automated data lifecycle. No servers to patch, near-zero cost at rest.
