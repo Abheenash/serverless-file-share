@@ -69,6 +69,8 @@ Sender/Recipient
 - [x] Stage 4 — Minimal web UI on S3 + CloudFront (custom domain deferred — see docs/stage4.md)
 - [x] Stage 5 — Terraform rebuild (`terraform/`, 38 resources), GitHub Actions CI/CD, [architecture diagram](docs/architecture.md)
 
+**Future scope:** authentication (Cognito JWT), custom domain, observability, and more — designed in [docs/future-scope.md](docs/future-scope.md).
+
 ## Cost
 
 Designed to live in the free tier: S3 + Lambda + DynamoDB on-demand + API Gateway at hobby volume costs pennies. A $5 budget alarm guards the account.
