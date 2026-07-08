@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PutFilesOnly",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::sfs-files-638515252275/files/*"
+    },
+    {
+      "Sid": "WriteMetadataOnly",
+      "Effect": "Allow",
+      "Action": "dynamodb:PutItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:638515252275:table/sfs-metadata"
+    }
+  ]
+}
