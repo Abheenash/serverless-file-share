@@ -12,6 +12,15 @@
       "Effect": "Allow",
       "Action": "dynamodb:PutItem",
       "Resource": "arn:aws:dynamodb:us-east-1:638515252275:table/sfs-metadata"
+    },
+    {
+      "Sid": "UseKmsViaS3Only",
+      "Effect": "Allow",
+      "Action": ["kms:GenerateDataKey", "kms:Decrypt"],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "kms:ViaService": "s3.us-east-1.amazonaws.com" }
+      }
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Id": "sfs-key-policy",
+  "Statement": [
+    {
+      "Sid": "AccountAdminManagesKey",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::638515252275:root" },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "IssueUrlRoleMayEncrypt",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::638515252275:role/sfs-issue-url-role" },
+      "Action": ["kms:GenerateDataKey*", "kms:Decrypt", "kms:DescribeKey"],
+      "Resource": "*"
+    }
+  ]
+}

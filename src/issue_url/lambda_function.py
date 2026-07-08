@@ -15,8 +15,11 @@ import time
 import uuid
 
 import boto3
+from botocore.config import Config
 
-s3 = boto3.client("s3")
+# SSE-KMS requires SigV4-signed requests; force it (the global S3 endpoint
+# otherwise defaults presigned URLs to legacy SigV2, which KMS rejects).
+s3 = boto3.client("s3", config=Config(signature_version="s3v4"))
 ddb = boto3.client("dynamodb")
 
 BUCKET = os.environ["BUCKET"]
