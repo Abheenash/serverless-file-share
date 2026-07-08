@@ -84,6 +84,12 @@ resource "aws_lambda_event_source_mapping" "reaper" {
       pattern = jsonencode({ eventName = ["REMOVE"] })
     }
   }
+
+  destination_config {
+    on_failure {
+      destination_arn = aws_sqs_queue.reaper_dlq.arn
+    }
+  }
 }
 
 # Let API Gateway invoke the two HTTP-facing functions.

@@ -22,7 +22,7 @@ $("go").addEventListener("click", async () => {
     const issue = await fetch(`${API_BASE}/files`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, expiresInSeconds }),
+      body: JSON.stringify({ filename: file.name, expiresInSeconds, contentLength: file.size }),
     });
     if (!issue.ok) throw new Error(`issue-url failed (${issue.status})`);
     const { fileId, uploadUrl } = await issue.json();

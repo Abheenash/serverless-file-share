@@ -29,6 +29,7 @@ UPLOAD_URL_TTL = 900                 # presigned PUT is valid 15 minutes
 MIN_FILE_LIFETIME = 60               # 1 minute floor
 MAX_FILE_LIFETIME = 7 * 24 * 3600    # 7-day cap (matches the product promise)
 DEFAULT_FILE_LIFETIME = 24 * 3600    # 1 day default
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # hard cap on file size (100 MB)
 
 
 def handler(event, context):
@@ -41,6 +42,18 @@ def handler(event, context):
     lifetime = int(body.get("expiresInSeconds", DEFAULT_FILE_LIFETIME))
     lifetime = max(MIN_FILE_LIFETIME, min(lifetime, MAX_FILE_LIFETIME))
 
+    # Enforce a size cap. The client declares the byte count; we reject anything
+    # over the max, then sign the PUT bound to exactly that length so S3 refuses
+    # a larger body. Stops the open endpoint being used as unbounded free storage.
+    try:
+        content_length = int(body.get("contentLength", 0))
+    except (TypeError, ValueError):
+        return _resp(400, {"error": "contentLength must be an integer"})
+    if content_length <= 0:
+        return _resp(400, {"error": "contentLength (file size in bytes) is required"})
+    if content_length > MAX_UPLOAD_BYTES:
+        return _resp(413, {"error": f"file too large (max {MAX_UPLOAD_BYTES} bytes)"})
+
     file_id = str(uuid.uuid4())
     key = f"files/{file_id}/{filename}"
     now = int(time.time())
@@ -48,7 +61,7 @@ def handler(event, context):
 
     upload_url = s3.generate_presigned_url(
         "put_object",
-        Params={"Bucket": BUCKET, "Key": key},
+        Params={"Bucket": BUCKET, "Key": key, "ContentLength": content_length},
         ExpiresIn=UPLOAD_URL_TTL,
     )
 

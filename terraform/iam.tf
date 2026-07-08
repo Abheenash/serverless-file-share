@@ -72,6 +72,11 @@ data "aws_iam_policy_document" "reaper" {
     actions   = ["dynamodb:DeleteItem"]
     resources = [aws_dynamodb_table.metadata.arn]
   }
+  statement {
+    sid       = "SendToDLQ"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.reaper_dlq.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "reaper" {

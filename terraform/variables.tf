@@ -15,3 +15,9 @@ variable "max_file_lifetime_days" {
   type        = number
   default     = 7
 }
+
+variable "alarm_email" {
+  description = "Email to subscribe to the alarms SNS topic. Empty = no subscription (confirmation is manual)."
+  type        = string
+  default     = ""
+}

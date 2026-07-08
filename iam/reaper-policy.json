@@ -12,6 +12,12 @@
       "Effect": "Allow",
       "Action": "dynamodb:DeleteItem",
       "Resource": "arn:aws:dynamodb:us-east-1:638515252275:table/sfs-metadata"
+    },
+    {
+      "Sid": "SendToDLQ",
+      "Effect": "Allow",
+      "Action": "sqs:SendMessage",
+      "Resource": "arn:aws:sqs:us-east-1:638515252275:sfs-reaper-dlq"
     }
   ]
 }
