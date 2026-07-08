@@ -2,7 +2,7 @@
 
 Share a file through a link that expires. Files are encrypted at rest, links die on a timer, and the file itself is destroyed after expiry — nothing lingers.
 
-**Status:** Stage 4 complete — web UI on S3 + CloudFront ([docs/stage4.md](docs/stage4.md)). Built in public; this README evolves with the build.
+**Status:** ✅ All stages complete — full IaC + CI/CD ([docs/stage5.md](docs/stage5.md)). See the [architecture diagram](docs/architecture.md). Built in public.
 
 ## Why this project
 
@@ -61,7 +61,7 @@ Sender/Recipient
 - [x] Stage 2 — API: Lambda + API Gateway issue presigned URLs; DynamoDB metadata with TTL
 - [x] Stage 3 — Self-destruct: TTL → Streams → reaper Lambda; lifecycle backstop; SSE-KMS + least-privilege IAM
 - [x] Stage 4 — Minimal web UI on S3 + CloudFront (custom domain deferred — see docs/stage4.md)
-- [ ] Stage 5 — Terraform rebuild, GitHub Actions CI/CD, architecture diagram + screenshots
+- [x] Stage 5 — Terraform rebuild (`terraform/`, 38 resources), GitHub Actions CI/CD, [architecture diagram](docs/architecture.md)
 
 ## Cost
 

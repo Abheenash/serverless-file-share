@@ -1,0 +1,64 @@
+name: terraform
+
+on:
+  pull_request:
+    paths: ["terraform/**", "src/**", "web/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["terraform/**", "src/**", "web/**"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: terraform
+
+jobs:
+  # Always runs, no AWS credentials needed: format + syntax + internal consistency.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  # Runs on PRs only if an OIDC role is configured (repo variable AWS_ROLE_ARN).
+  # Prereqs: a remote backend (see terraform/README.md) and a GitHub OIDC IAM role.
+  plan:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request' && vars.AWS_ROLE_ARN != ''
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -input=false
+
+  # Applies on merge to main, gated behind a protected environment for manual approval.
+  apply:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'push' && vars.AWS_ROLE_ARN != ''
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform apply -auto-approve -input=false

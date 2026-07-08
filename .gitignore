@@ -4,3 +4,11 @@ __pycache__/
 .env
 *.pem
 web/config.js
+
+# terraform
+terraform/.terraform/
+terraform/build/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
