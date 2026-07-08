@@ -2,7 +2,7 @@
 
 Share a file through a link that expires. Files are encrypted at rest, links die on a timer, and the file itself is destroyed after expiry — nothing lingers.
 
-**Status:** Stage 0 — project scaffold. Built in public; this README evolves with the build.
+**Status:** Stage 1 complete — manual MVP working ([docs/stage1.md](docs/stage1.md)). Built in public; this README evolves with the build.
 
 ## Why this project
 
@@ -57,7 +57,7 @@ Sender/Recipient
 ## Roadmap
 
 - [x] Stage 0 — Repo, account hygiene (IAM admin + MFA, $5 budget alarm), AWS CLI
-- [ ] Stage 1 — Manual MVP: private encrypted bucket, upload via CLI, presigned GET, verify expiry
+- [x] Stage 1 — Manual MVP: private encrypted bucket, upload via CLI, presigned GET, verify expiry
 - [ ] Stage 2 — API: Lambda + API Gateway issue presigned URLs; DynamoDB metadata with TTL
 - [ ] Stage 3 — Self-destruct: TTL → Streams → reaper Lambda; lifecycle backstop; SSE-KMS + least-privilege IAM
 - [ ] Stage 4 — Minimal web UI on S3 + CloudFront, custom domain
