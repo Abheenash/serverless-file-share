@@ -12,3 +12,6 @@ terraform/build/
 *.tfstate.*
 *.tfplan
 crash.log
+
+# local-only, never pushed
+_local/
