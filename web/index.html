@@ -14,7 +14,9 @@
     .topbar { display:flex; align-items:center; gap:.6rem; background:var(--squid); color:#fff; height:48px; padding:0 1rem; }
     .cube { width:18px; height:18px; background:var(--orange); border-radius:3px; box-shadow:inset -3px -3px 0 rgba(0,0,0,.2); }
     .tb-brand { font-weight:700; } .tb-service { color:var(--orange); font-weight:600; font-size:.9rem; }
-    .tb-right { margin-left:auto; } .tb-right a { color:#d5dbdb; font-size:.85rem; }
+    .back-btn { color:#fff; border:1px solid #56606e; border-radius:6px; padding:.3rem .8rem; font-size:.85rem; text-decoration:none; }
+    .back-btn:hover { border-color:var(--orange); background:rgba(255,255,255,.08); }
+    .tb-service { margin-left:auto; }
     .crumb { background:#fafafa; border-bottom:1px solid var(--border); padding:.5rem 1.2rem; font-size:.82rem; color:var(--muted); }
     .crumb b { color:var(--text); }
     /* content */
@@ -39,10 +41,10 @@
 </head>
 <body>
   <header class="topbar">
+    <a class="back-btn" href="https://abheenash.com">← Back to Portfolio</a>
     <span class="cube"></span>
     <span class="tb-brand">Abheenash</span>
     <span class="tb-service">Serverless File Share</span>
-    <span class="tb-right"><a href="https://abheenash.com">← Portfolio</a></span>
   </header>
   <div class="crumb">Console Home <span>›</span> <b>Serverless File Share</b></div>
 
