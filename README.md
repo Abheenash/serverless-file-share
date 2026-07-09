@@ -31,7 +31,7 @@ Sender/Recipient
                                                                 (S3 lifecycle rule as backstop)
 ```
 
-## How it works (planned)
+## How it works
 
 1. Sender asks the API for an upload link. Lambda returns a **presigned PUT URL** (short expiry) and writes a metadata item to DynamoDB with a **TTL** matching the file's lifetime.
 2. The file lands in a **private, SSE-KMS-encrypted bucket**. Block Public Access is on account-wide; nothing is ever public.
