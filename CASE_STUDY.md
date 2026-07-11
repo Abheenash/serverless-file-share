@@ -135,6 +135,40 @@ ever woke. Once the mapping is warm and polling, `REMOVE` events fire the reaper
 reliably. The lesson: `LATEST` has a cold-start gap, and a self-destruct path needs
 the backstop (S3 lifecycle) precisely because the primary trigger can miss an event.
 
+## Level-up: from demo to product (Phase 1)
+
+The first version proved the security architecture. The level-up turns it into
+something you'd actually use, with three optional, **no-login** controls on every
+share link — all enforced server-side, never in the browser:
+
+- **Password protection.** The uploader can require a password. It's stored *only*
+  as a **PBKDF2-SHA256 hash** (random per-file salt, 120k iterations); the plaintext
+  never reaches the backend and is never stored. Verification is constant-time
+  (`hmac.compare_digest`), so a wrong guess can't be timed to leak the hash.
+- **Download limits.** A link can be capped at *N* downloads. The count is enforced
+  with an **atomic DynamoDB conditional update** (`SET downloadCount = downloadCount + 1`
+  guarded by `ConditionExpression: downloadCount < maxDownloads`), so two people
+  clicking at once can't both slip through the last slot — the database, not the
+  Lambda, is the source of truth. Once the cap is hit the link is `410 Gone`.
+- **Download notifications.** The uploader can opt to be emailed (via **SES**, from a
+  DKIM-signed `no-reply@abheenash.com`) each time the file is fetched — best-effort,
+  so a notification failure never blocks the download.
+
+**The architectural change this forced.** The original download was a single
+`GET /files/{id}` that 302-redirected straight to the file. A password prompt can't
+live in a redirect, so I split the resource into two verbs:
+
+- `GET /files/{id}` → **metadata only** (`filename`, expiry, `passwordProtected`,
+  `downloadsLeft`) so the new download page can render and prompt for a password
+  *without* the API ever handing out the file to an unauthenticated request.
+- `POST /files/{id}` → validates the password, atomically enforces + increments the
+  limit, fires the notification, and only then returns a short-lived presigned URL.
+
+The share link is now a real download page (`/get.html?id=…`) instead of a raw API
+URL. A subtle bug I hit and fixed along the way: DynamoDB's `if_not_exists()` is
+allowed in an *UpdateExpression* but **not** in a *ConditionExpression* — so the
+counter is seeded to `0` at creation and the condition references it directly.
+
 ## Security decisions
 
 - **SSE-KMS with a customer-managed CMK** (`alias/sfs-key`). The key policy grants
@@ -182,21 +216,27 @@ the backstop (S3 lifecycle) precisely because the primary trigger can miss an ev
 
 ## What I would improve next
 
-These are designed, with trade-offs thought through, in
+**Shipped since the first cut** (see the Level-up section above): download-count
+limits, password-protected links, and download notifications — plus **observability**,
+which is handled by a sibling project ([cloud-observability-sre](https://github.com/Abheenash/cloud-observability-sre))
+that watches this live stack with a golden-signals dashboard, alarms, X-Ray, and a
+Synthetics canary.
+
+Still designed, with trade-offs thought through, in
 [`docs/future-scope.md`](docs/future-scope.md):
 
-- **Add authentication to the upload side.** Attach a Cognito JWT authorizer to
-  `POST /files` only (HTTP APIs support JWT authorizers natively, so no custom
-  auth code), keeping `GET /files/{id}` public by design. Verification target:
-  `POST /files` with no token → `401`, with a valid JWT → `201`, download still
-  public.
-- **Tighten and extend the lifecycle** — e.g. one-time / download-count limits by
-  tracking a `downloads` counter in DynamoDB that the download Lambda decrements
-  and refuses at zero.
-- **Observability** — a CloudWatch dashboard and alarms on Lambda errors and
-  4xx/5xx, plus X-Ray tracing across API → Lambda → S3/DynamoDB.
-- **Upload malware scanning** — S3 event → Lambda (ClamAV or GuardDuty Malware
-  Protection) → quarantine on a hit.
+- **Add authentication to the upload side + a "My Files" dashboard.** Attach a
+  Cognito JWT authorizer to `POST /files` only (HTTP APIs support JWT authorizers
+  natively, so no custom auth code), keeping `GET /files/{id}` public by design, and
+  give signed-in users a page to see and revoke their active links. Verification
+  target: `POST /files` with no token → `401`, with a valid JWT → `201`, download
+  still public.
+- **Client-side (zero-knowledge) encryption** — encrypt the file *in the browser*
+  with a key derived from the password (WebCrypto + PBKDF2) before upload, so the
+  server never sees plaintext. Turns "encrypted at rest with KMS" into "we couldn't
+  read it if we wanted to."
+- **Upload malware scanning** — S3 event → **GuardDuty Malware Protection for S3** →
+  quarantine on a hit, and only publish the link once the scan is clean.
 - **WAF** on CloudFront/API for rate-based rules once the endpoint is authenticated
   and public-facing.
 - **Make Terraform canonical** — import the live CLI-built stack into Terraform

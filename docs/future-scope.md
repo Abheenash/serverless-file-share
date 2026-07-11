@@ -1,11 +1,31 @@
 # Future scope
 
-Planned enhancements beyond the shipped Stages 0–5. These are **designs, not yet built** —
-captured so the direction is clear and the trade-offs are already thought through.
+Enhancements beyond the shipped Stages 0–5. The direction is captured with trade-offs
+thought through; the items under "Planned" are designs, not yet built.
 
 ---
 
-## Stage 6 (planned) — API authentication
+## Shipped since — Phase 1 level-up (2026-07)
+
+Delivered and live on share.abheenash.com (see [`CASE_STUDY.md`](../CASE_STUDY.md) →
+*Level-up*):
+
+- ✅ **Password-protected links** — PBKDF2-SHA256 hash (per-file salt, 120k iters),
+  constant-time verify; plaintext never stored.
+- ✅ **Download-count limits** — atomic DynamoDB conditional update; `410 Gone` once
+  the cap is hit.
+- ✅ **Download notifications** — SES email (DKIM-signed `no-reply@abheenash.com`) to
+  the uploader on each download, best-effort.
+- ✅ **Two-verb download** — `GET /files/{id}` returns metadata only; `POST /files/{id}`
+  validates + resolves. New `web/get.html` download page.
+
+Also already done outside this doc's original scope: **custom domain**
+(share.abheenash.com) and **observability** (handled by the sibling
+[cloud-observability-sre](https://github.com/Abheenash/cloud-observability-sre) project).
+
+---
+
+## Stage 6 (planned) — API authentication + "My Files" dashboard
 
 ### Problem
 
@@ -61,9 +81,11 @@ GET  /files/{id} (no token)  -> 302 / 410   (still public, by design)
 
 | Idea | Notes |
 |---|---|
-| **Custom domain** | ACM cert (us-east-1) + Route 53 + CloudFront alias. Cosmetic. |
-| **Observability** | CloudWatch dashboard + alarms (Lambda errors, 4xx/5xx), X-Ray tracing across API → Lambda → S3/DynamoDB. |
-| **One-time / download-count limits** | Track a `downloads` counter in DynamoDB; the download Lambda decrements and refuses at zero. |
-| **Upload malware scan** | S3 event → Lambda (ClamAV layer or GuardDuty Malware Protection) → quarantine on hit. |
-| **WAF** | Attach AWS WAF to CloudFront/API for rate-based rules once the endpoint is public. |
-| **Terraform as canonical** | Import the live CLI-built stack into Terraform state (guide in `terraform/README.md`) so IaC is the single source of truth. |
+| **Client-side (zero-knowledge) encryption** | Encrypt in the browser with a password-derived key (WebCrypto + PBKDF2) before upload, so the server never sees plaintext. Pairs with the shipped password feature; the strongest security differentiator left. |
+| **Upload malware scan** | S3 event → **GuardDuty Malware Protection for S3** (managed — no ClamAV to run) → quarantine on a hit; publish the link only once the scan is clean. |
+| **WAF** | Attach AWS WAF to CloudFront/API for rate-based rules once uploads are authenticated and the surface widens. |
+| **Terraform as canonical** | Import the live CLI-built `sfs-*` stack into Terraform state (guide in `terraform/README.md`) so IaC is the single source of truth — a real brownfield-import exercise. |
+| **Abuse controls** | Per-IP upload caps, max active links per user (needs Stage 6 auth), CAPTCHA on upload. |
+
+> Done in Phase 1 and removed from this list: download-count limits, password
+> protection, notifications. Custom domain and observability are also live (above).
