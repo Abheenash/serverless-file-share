@@ -38,6 +38,14 @@ resource "aws_apigatewayv2_route" "get_file" {
   target    = "integrations/${aws_apigatewayv2_integration.download.id}"
 }
 
+# POST resolves the download: validates password + download-count limit, fires
+# the optional notification, and returns a presigned URL. (Same download Lambda.)
+resource "aws_apigatewayv2_route" "post_file" {
+  api_id    = aws_apigatewayv2_api.sfs.id
+  route_key = "POST /files/{fileId}"
+  target    = "integrations/${aws_apigatewayv2_integration.download.id}"
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.sfs.id
   name        = "$default"

@@ -65,8 +65,9 @@ resource "aws_lambda_function" "download" {
 
   environment {
     variables = {
-      BUCKET = aws_s3_bucket.files.id
-      TABLE  = aws_dynamodb_table.metadata.name
+      BUCKET     = aws_s3_bucket.files.id
+      TABLE      = aws_dynamodb_table.metadata.name
+      SES_SENDER = var.notify_sender
     }
   }
 }

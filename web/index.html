@@ -3,85 +3,164 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Serverless File Share — AWS Console</title>
+  <title>Serverless File Share · Console</title>
+  <meta name="description" content="Self-destructing encrypted file sharing on AWS — part of Abheenash Rajolu's cloud portfolio." />
   <style>
-    :root { --squid:#232f3e; --squid-2:#2e3b4e; --orange:#ff9900; --orange-btn:#ec7211;
-      --bg:#f2f3f3; --card:#fff; --border:#d5dbdb; --text:#16191f; --muted:#5f6b7a; --link:#0073bb; --ok:#1d8102; }
+    :root {
+      --nav:#161d26; --bg:#f2f3f3; --card:#fff; --border:#c6c6cd; --border-soft:#e9ebed;
+      --text:#0f141a; --muted:#5f6b7a; --link:#006ce0; --link-hover:#002b66; --active:#0972d3; --ok:#037f0c; --orange-2:#ec7211;
+    }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { font:14px/1.55 "Amazon Ember",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); }
-    a { color:var(--link); text-decoration:none; } a:hover { text-decoration:underline; }
-    /* top console bar */
-    .topbar { display:flex; align-items:center; gap:.6rem; background:var(--squid); color:#fff; height:48px; padding:0 1rem; }
-    .cube { width:18px; height:18px; background:var(--orange); border-radius:3px; box-shadow:inset -3px -3px 0 rgba(0,0,0,.2); }
-    .tb-brand { font-weight:700; } .tb-service { color:var(--orange); font-weight:600; font-size:.9rem; }
-    .back-btn { color:#fff; border:1px solid #56606e; border-radius:6px; padding:.3rem .8rem; font-size:.85rem; text-decoration:none; }
-    .back-btn:hover { border-color:var(--orange); background:rgba(255,255,255,.08); }
-    .tb-service { margin-left:auto; }
-    .crumb { background:#fafafa; border-bottom:1px solid var(--border); padding:.5rem 1.2rem; font-size:.82rem; color:var(--muted); }
-    .crumb b { color:var(--text); }
-    /* content */
-    .wrap { max-width:640px; margin:2rem auto; padding:0 1rem; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-    .card-head { background:linear-gradient(180deg,var(--squid),var(--squid-2)); color:#fff; padding:1.3rem 1.5rem; border-left:4px solid var(--orange); }
-    .card-head h1 { font-size:1.3rem; } .card-head p { color:#c9d1d9; font-size:.88rem; margin-top:.25rem; }
-    .card-body { padding:1.5rem; }
+    html { background:var(--bg); }
+    body { font:14px/1.45 "Amazon Ember","Helvetica Neue",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    a { color:var(--link); text-decoration:none; } a:hover { color:var(--link-hover); text-decoration:underline; }
+
+    /* shell */
+    .shell { display:flex; align-items:flex-start; }
+    .side { width:250px; flex:none; background:#fff; border-right:1px solid var(--border-soft); min-height:100vh; padding:.6rem 0; position:sticky; top:0; }
+    .side-title { display:flex; align-items:center; justify-content:space-between; font-weight:700; padding:.7rem 1rem .7rem; font-size:.98rem; }
+    .side-title .chev { color:var(--muted); }
+    .side a { display:block; padding:.5rem 1rem; font-size:.86rem; color:var(--text); border-left:3px solid transparent; }
+    .side a:hover { background:#f2f8fd; text-decoration:none; }
+    .side a.active { color:var(--active); font-weight:700; background:#f0f7ff; border-left-color:var(--active); }
+    .side .sep { border-top:1px solid var(--border-soft); margin:.6rem 0; }
+
+    main { flex:1; min-width:0; padding:1.4rem 1.5rem 2rem; max-width:1200px; }
+    .page-head { display:flex; align-items:baseline; gap:.5rem; margin-bottom:1rem; }
+    .page-head h1 { font-size:1.5rem; font-weight:700; } .page-head .info { color:var(--link); font-size:.85rem; }
+
+    .layout { display:grid; grid-template-columns:1fr 320px; gap:1.2rem; align-items:start; }
+    @media (max-width:900px){ .layout { grid-template-columns:1fr; } .side { display:none; } }
+
+    .panel { background:var(--card); border:1px solid var(--border-soft); border-radius:16px; overflow:hidden; margin-bottom:1.2rem; }
+    .panel-head { display:flex; align-items:center; gap:.5rem; padding:1rem 1.2rem; border-bottom:1px solid var(--border-soft); }
+    .panel-head h2 { font-size:1.05rem; font-weight:700; }
+    .panel-body { padding:1.2rem; }
+    .panel-body p.lead { color:var(--muted); margin-bottom:.4rem; }
+
     label { display:block; font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:1rem 0 .35rem; }
     label:first-child { margin-top:0; }
-    input[type=file], select { width:100%; padding:.6rem; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:6px; font-size:.9rem; }
-    button#go { width:100%; margin-top:1.5rem; padding:.75rem; border:0; border-radius:6px; cursor:pointer; background:var(--orange-btn); color:#fff; font-size:.95rem; font-weight:600; }
-    button#go:disabled { opacity:.5; cursor:not-allowed; }
+    input[type=file], input[type=password], input[type=number], input[type=email], select { width:100%; padding:.6rem .7rem; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:8px; font-size:.9rem; }
+    input[type=file]:focus, input[type=password]:focus, input[type=number]:focus, input[type=email]:focus, select:focus { outline:2px solid var(--link); border-color:var(--link); }
+    label .opt { text-transform:none; letter-spacing:0; color:var(--muted); font-weight:400; }
+    a:hover { text-underline-offset:.25em; text-decoration-thickness:1px; }
+    button#go { margin-top:1.4rem; padding:.6rem 1.3rem; border:0; border-radius:8px; cursor:pointer; background:var(--orange-2); color:#fff; font-size:.9rem; font-weight:700; }
+    button#go:hover { background:#d9600d; } button#go:disabled { opacity:.5; cursor:not-allowed; }
     .status { margin-top:1rem; font-size:.88rem; color:var(--muted); min-height:1.2em; } .status.err { color:#d13212; }
-    #result { margin-top:1.5rem; display:none; }
-    .link-row { display:flex; gap:.5rem; }
-    .link-row input { flex:1; padding:.55rem; background:#f8fdf8; color:var(--ok); border:1px solid var(--border); border-radius:6px; font-size:.82rem; }
-    .link-row button { border:1px solid var(--border); background:#fff; border-radius:6px; padding:.55rem .9rem; cursor:pointer; font-weight:600; }
+    #result { margin-top:1.4rem; display:none; }
+    .link-row { display:flex; gap:.5rem; } .link-row input { flex:1; padding:.6rem; background:#f2fbf3; color:var(--ok); border:1px solid var(--border-soft); border-radius:8px; font-size:.82rem; }
+    .link-row button { border:1px solid var(--link); color:var(--link); background:#fff; border-radius:8px; padding:.6rem 1rem; cursor:pointer; font-weight:700; }
+    .link-row button:hover { background:#f2f8fd; border-color:var(--link-hover); color:var(--link-hover); }
     .meta { color:var(--muted); font-size:.8rem; margin-top:.6rem; }
-    footer { text-align:center; color:var(--muted); font-size:.78rem; padding:1.5rem; }
+    .hiw { margin:.2rem 0 0 1.1rem; color:var(--muted); font-size:.87rem; } .hiw li { margin-bottom:.35rem; } .hiw b { color:var(--text); }
+    .kv div { display:flex; justify-content:space-between; gap:1rem; padding:.5rem 0; border-bottom:1px solid var(--border-soft); font-size:.85rem; }
+    .kv div:last-child { border-bottom:0; } .kv span { color:var(--muted); } .kv b { color:var(--text); text-align:right; }
+    .btn-link { display:inline-flex; align-items:center; gap:.4rem; font-weight:700; font-size:.85rem; }
+
+    footer { display:flex; flex-wrap:wrap; justify-content:center; gap:.4rem 1rem; align-items:center;
+      color:var(--muted); font-size:.78rem; padding:1.2rem; text-align:center; }
+    footer a { text-decoration:underline; }
+
+    /* embedded inside the portfolio: hide the service sidebar + trim padding */
+    body.embed .side { display:none; }
+    body.embed main { padding:1rem 1.2rem 1.4rem; }
+    body.embed footer { display:none; }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <a class="back-btn" href="https://abheenash.com">← Back to Portfolio</a>
-    <span class="cube"></span>
-    <span class="tb-brand">Abheenash</span>
-    <span class="tb-service">Serverless File Share</span>
-  </header>
-  <div class="crumb">Console Home <span>›</span> <b>Serverless File Share</b></div>
+  <div class="shell">
+    <aside class="side">
+      <div class="side-title">Serverless File Share <span class="chev">‹</span></div>
+      <a class="active" href="#">Share a file</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#under-the-hood">Under the hood</a>
+      <a href="https://github.com/Abheenash/serverless-file-share" target="_blank" rel="noopener">Source code ↗</a>
+      <div class="sep"></div>
+      <a href="https://abheenash.com">↩ Back to portfolio</a>
+    </aside>
 
-  <div class="wrap">
-    <div class="card">
-      <div class="card-head">
-        <h1>🔥 Serverless File Share</h1>
-        <p>Upload a file, get a link that self-destructs. Encrypted at rest; nothing lingers.</p>
-      </div>
-      <div class="card-body">
-        <label for="file">File</label>
-        <input type="file" id="file" />
+    <main>
+      <div class="page-head"><h1>Share a file</h1><span class="info">Info</span></div>
 
-        <label for="expiry">Link lifetime</label>
-        <select id="expiry">
-          <option value="900">15 minutes</option>
-          <option value="3600" selected>1 hour</option>
-          <option value="86400">1 day</option>
-          <option value="604800">7 days</option>
-        </select>
+      <div class="layout">
+        <div>
+          <section class="panel">
+            <div class="panel-head"><h2>Create a share link</h2></div>
+            <div class="panel-body">
+              <p class="lead">Upload a file and get a link that self-destructs on a timer. Encrypted at rest with a customer-managed KMS key; the object is deleted when the link expires.</p>
 
-        <button id="go">Create share link</button>
-        <div class="status" id="status"></div>
+              <label for="file">File</label>
+              <input type="file" id="file" />
 
-        <div id="result">
-          <label>Share link</label>
-          <div class="link-row">
-            <input id="shareLink" readonly />
-            <button id="copy">Copy</button>
-          </div>
-          <div class="meta" id="expiryNote"></div>
+              <label for="expiry">Link lifetime</label>
+              <select id="expiry">
+                <option value="900">15 minutes</option>
+                <option value="3600" selected>1 hour</option>
+                <option value="86400">1 day</option>
+                <option value="604800">7 days</option>
+              </select>
+
+              <label for="password">Password <span class="opt">— optional, required to download</span></label>
+              <input type="password" id="password" placeholder="Leave blank for no password" autocomplete="new-password" />
+
+              <label for="maxdl">Download limit <span class="opt">— optional, link dies after N downloads</span></label>
+              <input type="number" id="maxdl" min="1" max="1000" placeholder="e.g. 3 — leave blank for unlimited" />
+
+              <label for="notify">Notify me on download <span class="opt">— optional, email on each download</span></label>
+              <input type="email" id="notify" placeholder="you@email.com — leave blank for none" />
+
+              <button id="go">Create share link</button>
+              <div class="status" id="status"></div>
+
+              <div id="result">
+                <label>Share link</label>
+                <div class="link-row">
+                  <input id="shareLink" readonly />
+                  <button id="copy">Copy</button>
+                </div>
+                <div class="meta" id="expiryNote"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="how-it-works">
+            <div class="panel-head"><h2>How it works</h2></div>
+            <div class="panel-body">
+              <ol class="hiw">
+                <li>The browser requests a <b>presigned upload URL</b> from API Gateway → Lambda and uploads straight to S3.</li>
+                <li>Metadata is written to <b>DynamoDB</b> with a <b>TTL</b> set to your chosen lifetime.</li>
+                <li>When the TTL fires, a <b>DynamoDB Stream</b> triggers a reaper Lambda that <b>deletes the S3 object</b>.</li>
+                <li>An S3 lifecycle rule is the backstop — nothing survives past 8 days.</li>
+              </ol>
+            </div>
+          </section>
         </div>
+
+        <aside>
+          <section class="panel" id="under-the-hood">
+            <div class="panel-head"><h2>Under the hood</h2></div>
+            <div class="panel-body kv">
+              <div><span>Encryption</span><b>SSE-KMS (CMK)</b></div>
+              <div><span>Upload / download</span><b>Presigned URLs</b></div>
+              <div><span>Self-destruct</span><b>DynamoDB TTL → Streams</b></div>
+              <div><span>Region</span><b>us-east-1</b></div>
+              <div><span>IaC</span><b>Terraform (38 res.)</b></div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-body">
+              <a class="btn-link" href="https://github.com/Abheenash/serverless-file-share" target="_blank" rel="noopener">View source on GitHub ↗</a><br><br>
+              <a class="btn-link" href="https://abheenash.com/#project/serverless-file-share">← Back to project write-up</a>
+            </div>
+          </section>
+        </aside>
       </div>
-    </div>
-    <footer>Built on AWS · Lambda · API Gateway · S3 · DynamoDB · KMS</footer>
+    </main>
   </div>
 
+  <footer>© <span id="yr"></span> Rajolu Abheenash · Serverless File Share on AWS (Lambda · S3 · DynamoDB · KMS) · not affiliated with AWS.</footer>
+
+  <script>if (location.search.indexOf('embed=1') > -1) document.body.classList.add('embed'); document.getElementById('yr').textContent = new Date().getFullYear();</script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

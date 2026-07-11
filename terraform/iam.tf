@@ -103,6 +103,12 @@ data "aws_iam_policy_document" "download" {
     actions   = ["dynamodb:GetItem"]
     resources = [aws_dynamodb_table.metadata.arn]
   }
+  # Atomic check-and-increment of the download-count limit (Phase-1 level-up).
+  statement {
+    sid       = "CountDownloads"
+    actions   = ["dynamodb:UpdateItem"]
+    resources = [aws_dynamodb_table.metadata.arn]
+  }
   statement {
     sid       = "ReadFilesOnly"
     actions   = ["s3:GetObject"]
@@ -117,6 +123,12 @@ data "aws_iam_policy_document" "download" {
       variable = "kms:ViaService"
       values   = ["s3.${var.region}.amazonaws.com"]
     }
+  }
+  # Best-effort "you were downloaded" notification, scoped to the one sender identity.
+  statement {
+    sid       = "NotifyUploader"
+    actions   = ["ses:SendEmail"]
+    resources = ["arn:aws:ses:${var.region}:${data.aws_caller_identity.current.account_id}:identity/${var.notify_sender}"]
   }
 }
 

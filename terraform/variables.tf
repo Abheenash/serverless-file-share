@@ -21,3 +21,9 @@ variable "alarm_email" {
   type        = string
   default     = ""
 }
+
+variable "notify_sender" {
+  description = "SES-verified sender used for 'your file was downloaded' notifications. Must be a verified SES identity."
+  type        = string
+  default     = "abheenash007@gmail.com"
+}

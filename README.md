@@ -4,6 +4,13 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 
 **Status:** ✅ All stages complete — full IaC + CI/CD ([docs/stage5.md](docs/stage5.md)). See the [architecture diagram](docs/architecture.md). Built in public.
 
+> **Level-up (Phase 1) — from demo to product.** Every share link now supports three optional, no-login controls, all enforced server-side:
+> - 🔒 **Password protection** — the password is stored only as a **PBKDF2-SHA256** hash (random per-file salt, 120k iterations); the plaintext never touches the backend.
+> - `#` **Download limit** — cap a link at *N* downloads. The count is enforced with an **atomic DynamoDB conditional update**, so concurrent fetches can't slip past the cap. The link goes 410 Gone once the cap is hit.
+> - 📧 **Download notifications** — the uploader can be emailed (via **SES**) on each download.
+>
+> This split the download into two verbs on one resource: `GET /files/{id}` returns *metadata only* (so the download page can prompt for a password), and `POST /files/{id}` validates the password + limit, fires the notification, and returns a short-lived presigned URL. See [`web/get.html`](web/get.html).
+
 ## Screenshots
 
 | Upload | Share link | Expiry |
