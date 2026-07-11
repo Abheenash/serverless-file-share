@@ -83,3 +83,38 @@ resource "aws_s3_object" "config" {
   content      = "window.SFS_CONFIG = { apiBase: \"${aws_apigatewayv2_api.sfs.api_endpoint}\" };\n"
   content_type = "application/javascript"
 }
+
+# Client-side zero-knowledge crypto module (AES-256-GCM in the browser).
+resource "aws_s3_object" "crypto" {
+  bucket       = aws_s3_bucket.site.id
+  key          = "sfs-crypto.js"
+  source       = "${path.module}/../web/sfs-crypto.js"
+  etag         = filemd5("${path.module}/../web/sfs-crypto.js")
+  content_type = "application/javascript"
+}
+
+# Download landing page: fetches ciphertext + decrypts in the recipient's browser.
+resource "aws_s3_object" "get_html" {
+  bucket       = aws_s3_bucket.site.id
+  key          = "get.html"
+  source       = "${path.module}/../web/get.html"
+  etag         = filemd5("${path.module}/../web/get.html")
+  content_type = "text/html"
+}
+
+resource "aws_s3_object" "get_js" {
+  bucket       = aws_s3_bucket.site.id
+  key          = "get.js"
+  source       = "${path.module}/../web/get.js"
+  etag         = filemd5("${path.module}/../web/get.js")
+  content_type = "application/javascript"
+}
+
+# Vendored QR-code generator (MIT) — served locally, no runtime CDN dependency.
+resource "aws_s3_object" "qrcode" {
+  bucket       = aws_s3_bucket.site.id
+  key          = "vendor/qrcode.min.js"
+  source       = "${path.module}/../web/vendor/qrcode.min.js"
+  etag         = filemd5("${path.module}/../web/vendor/qrcode.min.js")
+  content_type = "application/javascript"
+}

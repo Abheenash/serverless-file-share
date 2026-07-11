@@ -4,6 +4,8 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 
 **Status:** ✅ All stages complete — full IaC + CI/CD ([docs/stage5.md](docs/stage5.md)). See the [architecture diagram](docs/architecture.md). Built in public.
 
+> **Level-up (Phase 2) — zero-knowledge, end-to-end encrypted.** Every share is now **encrypted in the browser before it is uploaded**. A one-time **AES-256-GCM** key is generated client-side (WebCrypto), the file *and its filename* are sealed into ciphertext, and only that ciphertext reaches S3. The key travels in the share link's **`#fragment`** — which browsers never send to a server — so the API, the Lambdas, S3, and the operator only ever see ciphertext. **The service cannot read your file, or even its name.** SSE-KMS remains underneath as defense-in-depth (double encryption). Same no-login flow; the recipient's browser fetches the ciphertext and decrypts locally. Also new: 📝 **secret-note mode** (share a password/message, not a file), 🔥 **burn-after-reading**, drag-and-drop, and a QR code for the link. Design + threat model: [`docs/e2ee.md`](docs/e2ee.md).
+>
 > **Level-up (Phase 1) — from demo to product.** Every share link now supports three optional, no-login controls, all enforced server-side:
 > - 🔒 **Password protection** — the password is stored only as a **PBKDF2-SHA256** hash (random per-file salt, 120k iterations); the plaintext never touches the backend.
 > - `#` **Download limit** — cap a link at *N* downloads. The count is enforced with an **atomic DynamoDB conditional update**, so concurrent fetches can't slip past the cap. The link goes 410 Gone once the cap is hit.

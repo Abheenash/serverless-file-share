@@ -135,6 +135,51 @@ ever woke. Once the mapping is warm and polling, `REMOVE` events fire the reaper
 reliably. The lesson: `LATEST` has a cold-start gap, and a self-destruct path needs
 the backstop (S3 lifecycle) precisely because the primary trigger can miss an event.
 
+## Level-up: zero-knowledge encryption (Phase 2)
+
+Phase 1 made the product useful. Phase 2 raised the security ceiling from
+"encrypted with a key **I** control" to **"encrypted with a key I never see."**
+
+Every share is now **end-to-end encrypted in the browser** before upload. A fresh
+**AES-256-GCM** key is generated with WebCrypto, the file *and its filename* are
+sealed into ciphertext, and only ciphertext is PUT to S3. The key is carried in the
+share link's **`#fragment`** — which browsers never transmit — so the API, the
+Lambdas, S3, DynamoDB, and I only ever hold ciphertext. **The service cannot read
+the file, or even its name.** SSE-KMS stays underneath as defense-in-depth.
+
+**Why this design and not accounts + server-side keys.** The whole product
+constraint is *frictionless* — a recruiter won't sign up to test it. Fragment-key
+E2EE (the Firefox Send / Bitwarden Send model) keeps the click-and-try flow while
+making the trust boundary the browser, not my IAM policy. The best key-management
+story is not holding the key at all.
+
+**The insight that made the backend almost free to change.** Zero-knowledge is a
+*client-side* property. The Lambdas didn't need to learn cryptography — they only
+needed to *stop knowing things*. So `issue_url` records a single `encrypted: true`
+boolean (never the key) and the client sends a generic `encrypted.bin` name instead
+of the real one. The filename travels *inside* the ciphertext, framed ahead of the
+bytes as `[4-byte length][JSON header][data]`, so it decrypts out on the other side
+with zero server involvement. Total backend delta: ~3 lines, no table migration
+(DynamoDB is schemaless past its key), no new IAM, **no new cost**.
+
+**Design choices worth calling out:**
+- **Authenticated encryption (GCM).** A tampered blob or wrong key fails the auth
+  tag and decryption *throws* — it can never silently return corrupted bytes.
+- **Client-side fetch-then-decrypt.** The download page changed from *navigating*
+  to the presigned URL (S3 serves the file) to *fetching* the ciphertext and
+  decrypting in memory. This worked with zero infra change because the files bucket
+  CORS already allowed cross-origin `GET` from the site origin.
+- **Secret-note mode reuses the same envelope.** A note is just `kind:"note"` in the
+  header — same encrypt/upload path, rendered inline instead of downloaded. Sharing
+  a password or API key became a five-second demo.
+- **Abuse control without WAF.** An open upload endpoint is a free-storage magnet.
+  Rather than pay ~$5/mo for AWS WAF on a portfolio demo, I throttled the write route
+  hard at the API Gateway layer (1 rps / burst 3) — same "ran an open endpoint
+  responsibly" story, $0.
+
+Full design + threat model (including the honest limitations — anyone with the link
+can decrypt; the key lives in browser history) is in [`docs/e2ee.md`](docs/e2ee.md).
+
 ## Level-up: from demo to product (Phase 1)
 
 The first version proved the security architecture. The level-up turns it into

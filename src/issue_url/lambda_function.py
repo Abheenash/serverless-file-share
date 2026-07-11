@@ -88,6 +88,13 @@ def handler(event, context):
         "downloadCount": {"N": "0"},
     }
 
+    # Zero-knowledge marker: when the client encrypted the payload in-browser
+    # (AES-256-GCM), the object we store is ciphertext and the real filename is
+    # sealed inside it. We only record THAT it's E2EE — never the key. The
+    # download page reads this flag to decrypt client-side. See docs/e2ee.md.
+    if body.get("encrypted"):
+        item["encrypted"] = {"BOOL": True}
+
     # --- optional Phase-1 controls -----------------------------------------
     password = body.get("password")
     if password not in (None, ""):
@@ -126,6 +133,7 @@ def handler(event, context):
         "passwordProtected": "passwordHash" in item,
         "maxDownloads": int(item["maxDownloads"]["N"]) if "maxDownloads" in item else None,
         "notify": bool(notify_email),
+        "encrypted": "encrypted" in item,
     })
 
 

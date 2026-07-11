@@ -63,6 +63,8 @@ def _info(item, gone):
         "expiresAt": int(item["expiresAt"]["N"]),
         "passwordProtected": "passwordHash" in item,
         "downloadsLeft": left,
+        # E2EE links carry only ciphertext; the page decrypts in the browser.
+        "encrypted": item.get("encrypted", {}).get("BOOL", False),
     })
 
 
@@ -142,7 +144,10 @@ def _verify_password(supplied, stored):
 
 
 def _notify(to_addr, item):
-    filename = item.get("filename", {}).get("S", "your file")
+    # For E2EE links the real filename is sealed client-side, so the server
+    # genuinely doesn't know it — the notification stays deliberately generic.
+    label = "your shared file" if item.get("encrypted", {}).get("BOOL") else \
+        f'"{item.get("filename", {}).get("S", "your file")}"'
     left = _downloads_left(item)
     tail = f" ({left - 1} download(s) left)" if left is not None else ""
     try:
@@ -150,9 +155,9 @@ def _notify(to_addr, item):
             Source=SES_SENDER,
             Destination={"ToAddresses": [to_addr]},
             Message={
-                "Subject": {"Data": f'📥 Your file "{filename}" was just downloaded'},
+                "Subject": {"Data": "📥 Your shared file was just downloaded"},
                 "Body": {"Text": {"Data": (
-                    f'Someone just downloaded "{filename}" through your share link{tail}.\n\n'
+                    f"Someone just downloaded {label} through your share link{tail}.\n\n"
                     f"Shared via share.abheenash.com — the self-destructing file service."
                 )}},
             },

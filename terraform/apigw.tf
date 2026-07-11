@@ -55,4 +55,23 @@ resource "aws_apigatewayv2_stage" "default" {
     throttling_burst_limit = 5
     throttling_rate_limit  = 2
   }
+
+  # Stage C hardening (the free alternative to AWS WAF): throttle the write
+  # route hard — an open upload endpoint is the abuse vector for free storage —
+  # while keeping the read/resolve routes comfortable for real recipients.
+  route_settings {
+    route_key              = "POST /files"
+    throttling_rate_limit  = 1
+    throttling_burst_limit = 3
+  }
+  route_settings {
+    route_key              = "GET /files/{fileId}"
+    throttling_rate_limit  = 5
+    throttling_burst_limit = 10
+  }
+  route_settings {
+    route_key              = "POST /files/{fileId}"
+    throttling_rate_limit  = 5
+    throttling_burst_limit = 10
+  }
 }

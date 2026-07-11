@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Serverless File Share · Console</title>
-  <meta name="description" content="Self-destructing encrypted file sharing on AWS — part of Abheenash Rajolu's cloud portfolio." />
+  <meta name="description" content="Zero-knowledge, self-destructing file & secret sharing on AWS — encrypted in your browser. Part of Abheenash Rajolu's cloud portfolio." />
   <style>
     :root {
       --nav:#161d26; --bg:#f2f3f3; --card:#fff; --border:#c6c6cd; --border-soft:#e9ebed;
@@ -26,8 +26,10 @@
     .side .sep { border-top:1px solid var(--border-soft); margin:.6rem 0; }
 
     main { flex:1; min-width:0; padding:1.4rem 1.5rem 2rem; max-width:1200px; }
-    .page-head { display:flex; align-items:baseline; gap:.5rem; margin-bottom:1rem; }
+    .page-head { display:flex; align-items:baseline; gap:.5rem; margin-bottom:.4rem; }
     .page-head h1 { font-size:1.5rem; font-weight:700; } .page-head .info { color:var(--link); font-size:.85rem; }
+    .zk-banner { display:inline-flex; align-items:center; gap:.5rem; background:#eafff0; color:#03631a; border:1px solid #b7e9c4;
+      border-radius:999px; padding:.35rem .8rem; font-size:.82rem; font-weight:600; margin-bottom:1rem; }
 
     .layout { display:grid; grid-template-columns:1fr 320px; gap:1.2rem; align-items:start; }
     @media (max-width:900px){ .layout { grid-template-columns:1fr; } .side { display:none; } }
@@ -40,10 +42,27 @@
 
     label { display:block; font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:1rem 0 .35rem; }
     label:first-child { margin-top:0; }
-    input[type=file], input[type=password], input[type=number], input[type=email], select { width:100%; padding:.6rem .7rem; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:8px; font-size:.9rem; }
-    input[type=file]:focus, input[type=password]:focus, input[type=number]:focus, input[type=email]:focus, select:focus { outline:2px solid var(--link); border-color:var(--link); }
+    input[type=file], input[type=password], input[type=number], input[type=email], select, textarea { width:100%; padding:.6rem .7rem; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:8px; font-size:.9rem; font-family:inherit; }
+    input:focus, select:focus, textarea:focus { outline:2px solid var(--link); border-color:var(--link); }
+    input:disabled { background:#f4f4f6; color:var(--muted); }
     label .opt { text-transform:none; letter-spacing:0; color:var(--muted); font-weight:400; }
-    a:hover { text-underline-offset:.25em; text-decoration-thickness:1px; }
+
+    /* mode tabs */
+    .tabs { display:flex; gap:.4rem; margin-bottom:.4rem; }
+    .tabs button { flex:1; padding:.55rem; border:1px solid var(--border); background:#fff; color:var(--muted); border-radius:8px; cursor:pointer; font-size:.86rem; font-weight:700; }
+    .tabs button.on { background:#f0f7ff; border-color:var(--active); color:var(--active); }
+
+    /* dropzone */
+    .drop { border:2px dashed var(--border); border-radius:12px; padding:1.6rem 1rem; text-align:center; color:var(--muted); cursor:pointer; transition:.15s; }
+    .drop:hover, .drop.over { border-color:var(--active); background:#f0f7ff; color:var(--active); }
+    .drop .big { font-size:1.6rem; display:block; margin-bottom:.3rem; }
+
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+    @media (max-width:520px){ .row2 { grid-template-columns:1fr; } }
+    .check { display:flex; align-items:center; gap:.5rem; margin-top:1rem; font-size:.86rem; color:var(--text); }
+    .check input { width:auto; }
+    .check span.opt { color:var(--muted); }
+
     button#go { margin-top:1.4rem; padding:.6rem 1.3rem; border:0; border-radius:8px; cursor:pointer; background:var(--orange-2); color:#fff; font-size:.9rem; font-weight:700; }
     button#go:hover { background:#d9600d; } button#go:disabled { opacity:.5; cursor:not-allowed; }
     .status { margin-top:1rem; font-size:.88rem; color:var(--muted); min-height:1.2em; } .status.err { color:#d13212; }
@@ -52,6 +71,7 @@
     .link-row button { border:1px solid var(--link); color:var(--link); background:#fff; border-radius:8px; padding:.6rem 1rem; cursor:pointer; font-weight:700; }
     .link-row button:hover { background:#f2f8fd; border-color:var(--link-hover); color:var(--link-hover); }
     .meta { color:var(--muted); font-size:.8rem; margin-top:.6rem; }
+    #qr { margin-top:1rem; width:132px; } #qr svg { width:132px; height:132px; border:1px solid var(--border-soft); border-radius:8px; background:#fff; padding:4px; }
     .hiw { margin:.2rem 0 0 1.1rem; color:var(--muted); font-size:.87rem; } .hiw li { margin-bottom:.35rem; } .hiw b { color:var(--text); }
     .kv div { display:flex; justify-content:space-between; gap:1rem; padding:.5rem 0; border-bottom:1px solid var(--border-soft); font-size:.85rem; }
     .kv div:last-child { border-bottom:0; } .kv span { color:var(--muted); } .kv b { color:var(--text); text-align:right; }
@@ -71,7 +91,7 @@
   <div class="shell">
     <aside class="side">
       <div class="side-title">Serverless File Share <span class="chev">‹</span></div>
-      <a class="active" href="#">Share a file</a>
+      <a class="active" href="#">Share securely</a>
       <a href="#how-it-works">How it works</a>
       <a href="#under-the-hood">Under the hood</a>
       <a href="https://github.com/Abheenash/serverless-file-share" target="_blank" rel="noopener">Source code ↗</a>
@@ -80,45 +100,69 @@
     </aside>
 
     <main>
-      <div class="page-head"><h1>Share a file</h1><span class="info">Info</span></div>
+      <div class="page-head"><h1>Share securely</h1><span class="info">Info</span></div>
+      <div class="zk-banner">🔐 Zero-knowledge — encrypted in your browser before upload. I can’t read it either.</div>
 
       <div class="layout">
         <div>
           <section class="panel">
-            <div class="panel-head"><h2>Create a share link</h2></div>
+            <div class="panel-head"><h2>Create an encrypted link</h2></div>
             <div class="panel-body">
-              <p class="lead">Upload a file and get a link that self-destructs on a timer. Encrypted at rest with a customer-managed KMS key; the object is deleted when the link expires.</p>
+              <p class="lead">Share a file or a secret note via a link that self-destructs on a timer. The contents are encrypted <strong>in this browser</strong> with a one-time AES-256-GCM key — only ciphertext ever reaches AWS.</p>
 
-              <label for="file">File</label>
-              <input type="file" id="file" />
+              <div class="tabs">
+                <button id="tab-file" class="on" type="button">📄 File</button>
+                <button id="tab-note" type="button">📝 Secret note</button>
+              </div>
 
-              <label for="expiry">Link lifetime</label>
-              <select id="expiry">
-                <option value="900">15 minutes</option>
-                <option value="3600" selected>1 hour</option>
-                <option value="86400">1 day</option>
-                <option value="604800">7 days</option>
-              </select>
+              <div id="pane-file">
+                <div class="drop" id="drop">
+                  <span class="big">📤</span>
+                  <span id="drop-label">Drop a file here, or click to browse</span>
+                </div>
+                <input type="file" id="file" hidden />
+              </div>
 
-              <label for="password">Password <span class="opt">— optional, required to download</span></label>
+              <div id="pane-note" hidden>
+                <label for="note">Secret note <span class="opt">— a password, an API key, a message; encrypted like a file</span></label>
+                <textarea id="note" rows="5" placeholder="Type something you'd only send over an encrypted channel…"></textarea>
+              </div>
+
+              <div class="row2">
+                <div>
+                  <label for="expiry">Link lifetime</label>
+                  <select id="expiry">
+                    <option value="900">15 minutes</option>
+                    <option value="3600" selected>1 hour</option>
+                    <option value="86400">1 day</option>
+                    <option value="604800">7 days</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="maxdl">Download limit <span class="opt">— optional</span></label>
+                  <input type="number" id="maxdl" min="1" max="1000" placeholder="e.g. 3 — blank = unlimited" />
+                </div>
+              </div>
+
+              <label class="check"><input type="checkbox" id="burn" /> 🔥 Burn after reading <span class="opt">— link dies after a single download</span></label>
+
+              <label for="password">Password <span class="opt">— optional second factor, required to download</span></label>
               <input type="password" id="password" placeholder="Leave blank for no password" autocomplete="new-password" />
-
-              <label for="maxdl">Download limit <span class="opt">— optional, link dies after N downloads</span></label>
-              <input type="number" id="maxdl" min="1" max="1000" placeholder="e.g. 3 — leave blank for unlimited" />
 
               <label for="notify">Notify me on download <span class="opt">— optional, email on each download</span></label>
               <input type="email" id="notify" placeholder="you@email.com — leave blank for none" />
 
-              <button id="go">Create share link</button>
+              <button id="go" type="button">Encrypt & create link</button>
               <div class="status" id="status"></div>
 
               <div id="result">
-                <label>Share link</label>
+                <label>Share link <span class="opt">— the part after “#” is the key; never sent to any server</span></label>
                 <div class="link-row">
                   <input id="shareLink" readonly />
-                  <button id="copy">Copy</button>
+                  <button id="copy" type="button">Copy</button>
                 </div>
                 <div class="meta" id="expiryNote"></div>
+                <div id="qr" hidden></div>
               </div>
             </div>
           </section>
@@ -127,10 +171,10 @@
             <div class="panel-head"><h2>How it works</h2></div>
             <div class="panel-body">
               <ol class="hiw">
-                <li>The browser requests a <b>presigned upload URL</b> from API Gateway → Lambda and uploads straight to S3.</li>
-                <li>Metadata is written to <b>DynamoDB</b> with a <b>TTL</b> set to your chosen lifetime.</li>
-                <li>When the TTL fires, a <b>DynamoDB Stream</b> triggers a reaper Lambda that <b>deletes the S3 object</b>.</li>
-                <li>An S3 lifecycle rule is the backstop — nothing survives past 8 days.</li>
+                <li>Your browser generates a one-time <b>AES-256-GCM key</b> and <b>encrypts the file locally</b> — the filename is sealed inside the ciphertext too.</li>
+                <li>It requests a <b>presigned upload URL</b> from API Gateway → Lambda and uploads only the <b>ciphertext</b> to S3.</li>
+                <li>The key is appended to the share link as a <b>#fragment</b> — which browsers never send to a server. The recipient’s browser decrypts locally.</li>
+                <li>Metadata gets a <b>DynamoDB TTL</b>; when it fires, a <b>Stream</b> triggers a reaper Lambda that <b>deletes the object</b>. An S3 lifecycle rule is the backstop.</li>
               </ol>
             </div>
           </section>
@@ -140,11 +184,11 @@
           <section class="panel" id="under-the-hood">
             <div class="panel-head"><h2>Under the hood</h2></div>
             <div class="panel-body kv">
-              <div><span>Encryption</span><b>SSE-KMS (CMK)</b></div>
-              <div><span>Upload / download</span><b>Presigned URLs</b></div>
+              <div><span>In transit &amp; at rest</span><b>E2EE (AES-256-GCM)</b></div>
+              <div><span>Server-side too</span><b>SSE-KMS (defense in depth)</b></div>
+              <div><span>Key custody</span><b>URL #fragment only</b></div>
               <div><span>Self-destruct</span><b>DynamoDB TTL → Streams</b></div>
-              <div><span>Region</span><b>us-east-1</b></div>
-              <div><span>IaC</span><b>Terraform (38 res.)</b></div>
+              <div><span>Region / IaC</span><b>us-east-1 · Terraform</b></div>
             </div>
           </section>
           <section class="panel">
@@ -158,10 +202,12 @@
     </main>
   </div>
 
-  <footer>© <span id="yr"></span> Rajolu Abheenash · Serverless File Share on AWS (Lambda · S3 · DynamoDB · KMS) · not affiliated with AWS.</footer>
+  <footer>© <span id="yr"></span> Rajolu Abheenash · Zero-knowledge file share on AWS (Lambda · S3 · DynamoDB · KMS) · not affiliated with AWS.</footer>
 
   <script>if (location.search.indexOf('embed=1') > -1) document.body.classList.add('embed'); document.getElementById('yr').textContent = new Date().getFullYear();</script>
   <script src="config.js"></script>
+  <script src="vendor/qrcode.min.js"></script>
+  <script src="sfs-crypto.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
