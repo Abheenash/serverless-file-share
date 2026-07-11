@@ -25,7 +25,25 @@ Also already done outside this doc's original scope: **custom domain**
 
 ---
 
+## Shipped since — Phase 2 level-up (2026-07): zero-knowledge E2EE
+
+Delivered and live (see [`docs/e2ee.md`](e2ee.md) + [`CASE_STUDY.md`](../CASE_STUDY.md)):
+
+- ✅ **Client-side (zero-knowledge) encryption** — AES-256-GCM in the browser
+  (WebCrypto) *before* upload; the key rides in the link `#fragment` and never
+  reaches a server; the filename is sealed inside the ciphertext too. SSE-KMS
+  stays as defense-in-depth. **This was the "strongest differentiator left" — now done.**
+- ✅ **Secret-note mode**, 🔥 **burn-after-reading**, drag-and-drop, QR code.
+- ✅ **Abuse control (free WAF alternative)** — hard per-route API Gateway throttle on
+  `POST /files` (1 rps / burst 3).
+
+---
+
 ## Stage 6 (planned) — API authentication + "My Files" dashboard
+
+> ⚠️ **Constraint (user, 2026-07):** login must stay **optional** — mandatory sign-in
+> kills the click-and-try demo that makes this recruiter-friendly. Auth gates the
+> *upload* side for real use, but the anonymous flow must remain the default.
 
 ### Problem
 
@@ -81,8 +99,7 @@ GET  /files/{id} (no token)  -> 302 / 410   (still public, by design)
 
 | Idea | Notes |
 |---|---|
-| **Client-side (zero-knowledge) encryption** | Encrypt in the browser with a password-derived key (WebCrypto + PBKDF2) before upload, so the server never sees plaintext. Pairs with the shipped password feature; the strongest security differentiator left. |
-| **Upload malware scan** | S3 event → **GuardDuty Malware Protection for S3** (managed — no ClamAV to run) → quarantine on a hit; publish the link only once the scan is clean. |
+| **Upload malware scan** | S3 event → **GuardDuty Malware Protection for S3** (managed — no ClamAV to run) → quarantine on a hit; publish the link only once the scan is clean. Note: works on ciphertext only for E2EE uploads, so it's most useful if/when a non-E2EE path exists. |
 | **WAF** | Attach AWS WAF to CloudFront/API for rate-based rules once uploads are authenticated and the surface widens. |
 | **Terraform as canonical** | Import the live CLI-built `sfs-*` stack into Terraform state (guide in `terraform/README.md`) so IaC is the single source of truth — a real brownfield-import exercise. |
 | **Abuse controls** | Per-IP upload caps, max active links per user (needs Stage 6 auth), CAPTCHA on upload. |
