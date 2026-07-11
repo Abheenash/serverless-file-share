@@ -23,7 +23,13 @@ variable "alarm_email" {
 }
 
 variable "notify_sender" {
-  description = "SES-verified sender used for 'your file was downloaded' notifications. Must be a verified SES identity."
+  description = "From-address for 'your file was downloaded' notifications. Must belong to a verified SES identity (see notify_identity)."
   type        = string
-  default     = "abheenash007@gmail.com"
+  default     = "no-reply@abheenash.com"
+}
+
+variable "notify_identity" {
+  description = "The verified SES identity (domain or email) that authorizes notify_sender. Domain identity lets you send from any address on it."
+  type        = string
+  default     = "abheenash.com"
 }

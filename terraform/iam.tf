@@ -124,11 +124,12 @@ data "aws_iam_policy_document" "download" {
       values   = ["s3.${var.region}.amazonaws.com"]
     }
   }
-  # Best-effort "you were downloaded" notification, scoped to the one sender identity.
+  # Best-effort "you were downloaded" notification, scoped to the verified identity
+  # (the domain) that authorizes the from-address.
   statement {
     sid       = "NotifyUploader"
     actions   = ["ses:SendEmail"]
-    resources = ["arn:aws:ses:${var.region}:${data.aws_caller_identity.current.account_id}:identity/${var.notify_sender}"]
+    resources = ["arn:aws:ses:${var.region}:${data.aws_caller_identity.current.account_id}:identity/${var.notify_identity}"]
   }
 }
 
