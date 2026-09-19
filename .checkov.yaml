@@ -42,3 +42,5 @@ skip-check:
   - CKV_AWS_287  # same
   - CKV_AWS_288  # same
   - CKV_AWS_289  # same
+  - CKV2_AWS_61  # S3 lifecycle on the SITE bucket: it holds the static web app, nothing expires; the files bucket has its lifecycle rules
+  - CKV_AWS_145  # KMS on the SITE bucket: public static HTML/JS served through CloudFront — nothing to protect; the files bucket uses a CMK
