@@ -35,6 +35,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "files" {
       days = var.max_file_lifetime_days + 1
     }
   }
+  # A browser that starts a 100 MB upload and closes the tab leaves orphaned parts
+  # that are billed but never listed; abort them after a day, bucket-wide.
+  rule {
+    id     = "abort-incomplete-multipart"
+    status = "Enabled"
+    filter {}
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
 }
 
 resource "aws_s3_bucket_cors_configuration" "files" {

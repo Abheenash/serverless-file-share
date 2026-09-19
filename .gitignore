@@ -15,3 +15,6 @@ crash.log
 
 # local-only, never pushed
 _local/
+
+.pytest_cache/
+__pycache__/

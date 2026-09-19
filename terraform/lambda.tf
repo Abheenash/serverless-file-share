@@ -79,6 +79,9 @@ resource "aws_lambda_event_source_mapping" "reaper" {
   starting_position      = "LATEST"
   batch_size             = 10
   maximum_retry_attempts = 3
+  # The reaper returns batchItemFailures for records whose S3 delete failed, so only
+  # those are retried — not the whole batch.
+  function_response_types = ["ReportBatchItemFailures"]
 
   filter_criteria {
     filter {

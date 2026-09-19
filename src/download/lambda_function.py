@@ -22,6 +22,7 @@ import hmac
 import json
 import os
 import time
+from urllib.parse import quote
 
 import boto3
 from botocore.config import Config
@@ -37,6 +38,18 @@ SES_SENDER = os.environ.get("SES_SENDER", "")
 DOWNLOAD_URL_TTL = 300  # the redirect target lives 5 minutes
 
 
+def log(**fields):
+    print(json.dumps({"fn": "download", **fields}, default=str))
+
+
+def content_disposition(filename):
+    """RFC 6266 / 5987: an ASCII fallback plus a UTF-8 encoded form. Quotes, CR/LF
+    and non-ASCII never reach the header unencoded, so a crafted filename cannot
+    inject headers into the presigned response."""
+    ascii_name = "".join(ch if 32 <= ord(ch) < 127 and ch not in '"\\' else "_" for ch in filename) or "download"
+    return f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(filename, safe="")}'
+
+
 def handler(event, context):
     method = (event.get("requestContext", {}).get("http", {}) or {}).get("method", "GET")
     file_id = (event.get("pathParameters") or {}).get("fileId")
@@ -45,7 +58,7 @@ def handler(event, context):
 
     item = ddb.get_item(TableName=TABLE, Key={"fileId": {"S": file_id}}).get("Item")
     now = int(time.time())
-    gone = (not item) or int(item["expiresAt"]["N"]) <= now
+    gone = (not item) or int(item.get("expiresAt", {}).get("N", "0")) <= now
 
     if method == "GET":
         return _info(item, gone)
@@ -81,6 +94,7 @@ def _fetch(event, file_id, item, gone):
     if "passwordHash" in item:
         supplied = str(body.get("password") or "")
         if not supplied or not _verify_password(supplied, item["passwordHash"]["S"]):
+            log(event="bad_password", fileId=file_id)
             return _json(401, {"error": "incorrect password"})
 
     # 2. download-count limit — atomic check-and-increment so concurrent fetches
@@ -97,6 +111,7 @@ def _fetch(event, file_id, item, gone):
                 ExpressionAttributeValues={":one": {"N": "1"}, ":z": {"N": "0"}},
             )
         except ddb.exceptions.ConditionalCheckFailedException:
+            log(event="cap_hit", fileId=file_id)
             return _json(410, {"error": "this link has hit its download limit"})
     else:
         ddb.update_item(
@@ -111,17 +126,22 @@ def _fetch(event, file_id, item, gone):
         _notify(notify, item)
 
     # 4. hand out a short-lived presigned GET
-    key = item["objectKey"]["S"]
+    key = item.get("objectKey", {}).get("S")
+    if not key:
+        log(event="no_object_key", fileId=file_id)
+        return _json(410, {"error": "this link has expired or does not exist"})
     filename = item.get("filename", {}).get("S", "download")
     url = s3.generate_presigned_url(
         "get_object",
         Params={
             "Bucket": BUCKET,
             "Key": key,
-            "ResponseContentDisposition": f'attachment; filename="{filename}"',
+            "ResponseContentDisposition": content_disposition(filename),
         },
         ExpiresIn=DOWNLOAD_URL_TTL,
     )
+    log(event="download", fileId=file_id, encrypted=item.get("encrypted", {}).get("BOOL", False),
+        downloadsLeft=_downloads_left(item), notified=bool(notify and SES_SENDER))
     return _json(200, {"downloadUrl": url})
 
 

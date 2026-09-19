@@ -13,6 +13,19 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 >
 > This split the download into two verbs on one resource: `GET /files/{id}` returns *metadata only* (so the download page can prompt for a password), and `POST /files/{id}` validates the password + limit, fires the notification, and returns a short-lived presigned URL. See [`web/get.html`](web/get.html).
 
+## v2 (Sep 2026) — hardened, tested, observable
+
+| | |
+| --- | --- |
+| **Header-injection fix** | A share named `evil"; filename="x\r\nX-Injected: 1.txt` used to go straight into the presigned URL's `Content-Disposition`. Filenames are now sanitised at issue time (no path separators, quotes or control characters, bounded length) and the download header is built per RFC 6266/5987 — an ASCII fallback plus `filename*=UTF-8''…` — so `résumé "final".pdf` round-trips correctly and CR/LF can never reach a header. Verified live. |
+| **Input robustness** | Non-object JSON bodies and non-integer `expiresInSeconds` are 400s instead of 500s; an item missing its object key is 410, not a crash. |
+| **Structured logs** | Every Lambda emits one JSON line per event (`issued`, `download`, `bad_password`, `cap_hit`, `reaped`, `reap_failed`, `batch`) with the file id — the observability project's Logs Insights queries can filter on real fields now. Never the content, never the key. |
+| **Reaper partial-batch failures** | The reaper returns `batchItemFailures` for a record whose S3 delete failed, and the stream mapping uses `ReportBatchItemFailures`, so only that record is retried instead of the whole batch of ten. |
+| **Tests** | 16 pytest cases against moto-mocked S3/DynamoDB/SES (`tests/`): presigned PUT bound to the declared size, lifetime clamping, the 100 MB cap, sanitisation cases, per-file PBKDF2 salts, info → fetch, expired/missing → 410, the password gate, the **atomic download cap**, best-effort SES, injection-safe disposition, and the reaper's REMOVE-only + partial-failure semantics. Run in CI. |
+| **IaC** | checkov against a reviewed baseline (100 passed, 0 failed): the DLQ is now SSE-encrypted and the bucket aborts incomplete multipart uploads after a day (a closed tab mid-upload used to leave billed, invisible parts behind). |
+
+Deployed to the live functions on 2026-09-19 and smoke-tested end to end (issue → PUT → info → wrong password 401 → download with the encoded header → cap 410).
+
 ## Screenshots
 
 | Upload | Share link | Expiry |

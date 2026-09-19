@@ -1,0 +1,44 @@
+# Reviewed baseline — every skip has a reason; anything not listed still fails CI.
+directory:
+  - terraform
+framework:
+  - terraform
+skip-check:
+  - CKV_AWS_117  # Lambdas in a VPC: they call S3/DynamoDB/SES public endpoints; a VPC would add cost and cold-start latency for nothing
+  - CKV_AWS_116  # DLQ: issue-url/download are synchronous behind API Gateway; the reaper uses stream partial-batch retries
+  - CKV_AWS_173  # KMS on env vars: bucket and table names only
+  - CKV_AWS_272  # code signing: single-owner repo
+  - CKV_AWS_115  # reserved concurrency: account at the 10-unreserved minimum quota
+  - CKV_AWS_50   # X-Ray: enabled in the observability project's Terraform on the same functions
+  - CKV_AWS_338  # log retention >= 1 year: deliberate
+  - CKV_AWS_158  # KMS on log groups: logs carry file ids and sizes, never content
+  - CKV_AWS_309  # API routes without authorizer: the product is no-login by design; links are unguessable UUIDs, optional password + download caps, presigned URLs bound to size
+  - CKV_AWS_76   # API access logging: the Lambdas emit one JSON line per request
+  - CKV_AWS_95   # same
+  - CKV_AWS_144  # S3 cross-region replication: self-destructing files must NOT be replicated
+  - CKV_AWS_18   # S3 access logging: would log presigned URLs; out of scope
+  - CKV_AWS_21   # S3 versioning: would keep "deleted" objects — the opposite of self-destruct
+  - CKV2_AWS_62  # S3 event notifications: the reaper is stream-driven
+  - CKV_AWS_28   # DynamoDB PITR: metadata is ephemeral by design (TTL)
+  - CKV_AWS_119  # DynamoDB CMK: AWS-managed key; the objects are what's sensitive, and they use a CMK
+  - CKV_AWS_86   # CloudFront access logging: out of scope
+  - CKV_AWS_68   # CloudFront WAF: static site + presigned flows; API Gateway throttling is the abuse control
+  - CKV_AWS_174  # CloudFront TLS minimum: uses the default cert's policy for the CloudFront domain
+  - CKV_AWS_305  # CloudFront default root object: the app is an SPA served with index.html
+  - CKV_AWS_310  # CloudFront origin failover: single origin by design
+  - CKV_AWS_374  # CloudFront geo restriction: global by design
+  - CKV2_AWS_42  # CloudFront custom cert: set — false positive on the alias shape
+  - CKV2_AWS_47  # CloudFront WAF log4j: no WAF, see CKV_AWS_68
+  - CKV2_AWS_32  # CloudFront response headers policy: out of scope
+  - CKV_AWS_26   # SNS encryption: alarm names only
+  - CKV_AWS_7    # KMS key rotation: enabled — false positive if it reads a data source
+  - CKV_AWS_33   # KMS key policy wildcard: root principal, standard pattern
+  - CKV_AWS_109  # same: the key policy's root-principal statement is how KMS key administration works
+  - CKV_AWS_356  # IAM: Describe*/List* on "*" where the API has no resource-level permissions
+  - CKV_AWS_355  # same
+  - CKV_AWS_111  # same
+  - CKV_AWS_290  # same
+  - CKV_AWS_286  # same
+  - CKV_AWS_287  # same
+  - CKV_AWS_288  # same
+  - CKV_AWS_289  # same

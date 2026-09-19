@@ -2,6 +2,7 @@
 # process, plus an alarm so a failed self-destruct can't vanish silently.
 
 resource "aws_sqs_queue" "reaper_dlq" {
+  sqs_managed_sse_enabled   = true
   name                      = "${var.name_prefix}-reaper-dlq"
   message_retention_seconds = 1209600 # 14 days
 }

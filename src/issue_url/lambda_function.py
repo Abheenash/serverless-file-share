@@ -21,6 +21,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 import uuid
 
 import boto3
@@ -43,6 +44,23 @@ MAX_DOWNLOADS_CAP = 1000             # sanity ceiling on the download-count limi
 PBKDF2_ITERATIONS = 120_000          # cost factor for password hashing
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MAX_FILENAME = 200
+
+
+def log(**fields):
+    """One JSON line per event, so Logs Insights can filter on real fields."""
+    print(json.dumps({"fn": "issue-url", **fields}, default=str))
+
+
+def safe_filename(name):
+    """Make a client-supplied name safe to embed in an S3 key and a Content-Disposition
+    header: no path separators, no control characters or quotes (header injection),
+    bounded length, never empty."""
+    name = unicodedata.normalize("NFKC", str(name or ""))
+    name = name.replace("\\", "/").split("/")[-1]                       # drop any path
+    name = "".join(ch for ch in name if ch.isprintable() and ch not in '"\'\\')
+    name = name.strip(" .")                                              # no hidden/dot-only names
+    return (name or "file")[:MAX_FILENAME]
 
 
 def _hash_password(plaintext):
@@ -58,8 +76,14 @@ def handler(event, context):
     except (TypeError, ValueError):
         return _resp(400, {"error": "request body must be valid JSON"})
 
-    filename = str(body.get("filename", "file"))
-    lifetime = int(body.get("expiresInSeconds", DEFAULT_FILE_LIFETIME))
+    if not isinstance(body, dict):
+        return _resp(400, {"error": "request body must be a JSON object"})
+
+    filename = safe_filename(body.get("filename", "file"))
+    try:
+        lifetime = int(body.get("expiresInSeconds", DEFAULT_FILE_LIFETIME))
+    except (TypeError, ValueError):
+        return _resp(400, {"error": "expiresInSeconds must be an integer"})
     lifetime = max(MIN_FILE_LIFETIME, min(lifetime, MAX_FILE_LIFETIME))
 
     # Enforce a size cap. The client declares the byte count; we reject anything
@@ -123,6 +147,9 @@ def handler(event, context):
     )
 
     ddb.put_item(TableName=TABLE, Item=item)
+    log(event="issued", fileId=file_id, bytes=content_length, lifetime=lifetime,
+        encrypted="encrypted" in item, password="passwordHash" in item,
+        maxDownloads=item.get("maxDownloads", {}).get("N"), notify=bool(notify_email))
 
     return _resp(201, {
         "fileId": file_id,
