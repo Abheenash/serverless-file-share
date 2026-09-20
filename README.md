@@ -1,5 +1,7 @@
 # Serverless File Share — self-destructing file sharing on AWS
 
+> **Sep 2026:** filename sanitisation + RFC 5987 `Content-Disposition` (header-injection fix), structured JSON logs, reaper partial-batch failures, 16 moto tests, checkov baseline — deployed live and smoke-tested.
+
 Share a file through a link that expires. Files are encrypted at rest, links die on a timer, and the file itself is destroyed after expiry — nothing lingers.
 
 **Status:** ✅ All stages complete — full IaC + CI/CD ([docs/stage5.md](docs/stage5.md)). See the [architecture diagram](docs/architecture.md). Built in public.
