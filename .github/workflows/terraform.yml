@@ -30,7 +30,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     needs: validate
-    if: github.event_name == 'pull_request' && vars.AWS_ROLE_ARN != ''
+    if: github.event_name == 'pull_request' && vars.AWS_ROLE_ARN != '' && vars.TF_STATE_BUCKET != ''
     permissions:
       contents: read
       id-token: write
@@ -41,14 +41,23 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: us-east-1
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform init
+      # Real backend now that state is remote. The values come from repo
+      # variables so no account id is committed.
+      - name: terraform init (remote state)
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=serverless-file-share/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
       - run: terraform plan -input=false
 
   # Applies on merge to main, gated behind a protected environment for manual approval.
   apply:
     runs-on: ubuntu-latest
     needs: validate
-    if: github.event_name == 'push' && vars.AWS_ROLE_ARN != ''
+    if: github.event_name == 'push' && vars.AWS_ROLE_ARN != '' && vars.TF_STATE_BUCKET != ''
     environment: production
     permissions:
       contents: read
@@ -60,5 +69,47 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: us-east-1
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform init
+      # Real backend now that state is remote. The values come from repo
+      # variables so no account id is committed.
+      - name: terraform init (remote state)
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=serverless-file-share/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
       - run: terraform apply -auto-approve -input=false
+
+  # tflint catches what `terraform validate` cannot: unused declarations, missing
+  # provider version constraints, invalid instance types. It found an unpinned
+  # `archive` provider in two of these repos.
+  tflint:
+    name: tflint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: terraform-linters/setup-tflint@v5
+        with:
+          tflint_version: v0.64.0
+      - name: tflint
+        working-directory: ${{ github.workspace }}
+        run: |
+          tflint --init --config="${{ github.workspace }}/.tflint.hcl"
+          tflint --chdir=terraform --config="${{ github.workspace }}/.tflint.hcl"
+
+  # `terraform test` against a mocked provider: no cloud account, no cost, and it
+  # asserts the specific promises this repo's README makes — which a generic
+  # scanner cannot know.
+  terraform-test:
+    name: terraform test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_wrapper: false }
+      - name: terraform test
+        working-directory: ${{ github.workspace }}/terraform
+        run: |
+          terraform init -backend=false
+          terraform test
