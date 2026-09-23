@@ -159,7 +159,7 @@ def _verify_password(supplied, stored):
         _scheme, _algo, iters, salt_hex, hash_hex = stored.split("$")
         dk = hashlib.pbkdf2_hmac("sha256", supplied.encode("utf-8"), bytes.fromhex(salt_hex), int(iters))
         return hmac.compare_digest(dk.hex(), hash_hex)
-    except Exception:  # noqa: BLE001 - any parse failure is a non-match
+    except Exception:
         return False
 
 
@@ -183,7 +183,7 @@ def _notify(to_addr, item):
             },
         )
         print(f"notify sent to {to_addr}: {resp.get('MessageId')}")
-    except Exception as e:  # noqa: BLE001 - SES sandbox only sends to verified addrs
+    except Exception as e:
         print(f"notify skipped ({type(e).__name__}): {e}")
 
 
