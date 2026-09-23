@@ -20,7 +20,7 @@ data "archive_file" "download" {
 
 resource "aws_lambda_function" "issue_url" {
   function_name    = "${var.name_prefix}-issue-url"
-  runtime          = "python3.12"
+  runtime          = "python3.13"
   handler          = "lambda_function.handler"
   role             = aws_iam_role.issue_url.arn
   filename         = data.archive_file.issue_url.output_path
@@ -38,7 +38,7 @@ resource "aws_lambda_function" "issue_url" {
 
 resource "aws_lambda_function" "reaper" {
   function_name    = "${var.name_prefix}-reaper"
-  runtime          = "python3.12"
+  runtime          = "python3.13"
   handler          = "lambda_function.handler"
   role             = aws_iam_role.reaper.arn
   filename         = data.archive_file.reaper.output_path
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "reaper" {
 
 resource "aws_lambda_function" "download" {
   function_name    = "${var.name_prefix}-download"
-  runtime          = "python3.12"
+  runtime          = "python3.13"
   handler          = "lambda_function.handler"
   role             = aws_iam_role.download.arn
   filename         = data.archive_file.download.output_path
