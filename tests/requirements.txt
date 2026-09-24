@@ -1,4 +1,4 @@
 pytest>=9.1.1
 moto[s3,dynamodb,ses]>=5.2.3
 boto3>=1.43.98
-pytest-cov>=6
+pytest-cov>=7.1.0
