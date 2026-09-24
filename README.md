@@ -1,5 +1,14 @@
 # Serverless File Share — self-destructing file sharing on AWS
 
+> **Sep 2026 (v4):** **8 end-to-end tests against LocalStack** alongside the 16 moto ones —
+> free, no AWS account. The point is the presigned URL: the moto suite generates one but
+> never sends a request to it, so nothing ever validated the signature. These upload real
+> bytes to the real URL with no credentials, then download them back, and assert that S3
+> itself refuses a tampered signature and a body larger than the signed `ContentLength`.
+> The reaper is fed a **real DynamoDB Streams REMOVE record** rather than a hand-written
+> one, which is what actually proves `OldImage.objectKey` is there. No application code
+> changed: botocore resolves `AWS_ENDPOINT_URL` natively.
+>
 > **Sep 2026 (v3):** AWS provider 5 → **6**, Lambda runtime 3.12 → **3.13**, Renovate + pre-commit + tflint so this cannot silently rot again. 16 moto tests still green.
 >
 > **Sep 2026:** filename sanitisation + RFC 5987 `Content-Disposition` (header-injection fix), structured JSON logs, reaper partial-batch failures, 16 moto tests, checkov baseline — deployed live and smoke-tested.
@@ -25,7 +34,7 @@ Share a file through a link that expires. Files are encrypted at rest, links die
 | **Input robustness** | Non-object JSON bodies and non-integer `expiresInSeconds` are 400s instead of 500s; an item missing its object key is 410, not a crash. |
 | **Structured logs** | Every Lambda emits one JSON line per event (`issued`, `download`, `bad_password`, `cap_hit`, `reaped`, `reap_failed`, `batch`) with the file id — the observability project's Logs Insights queries can filter on real fields now. Never the content, never the key. |
 | **Reaper partial-batch failures** | The reaper returns `batchItemFailures` for a record whose S3 delete failed, and the stream mapping uses `ReportBatchItemFailures`, so only that record is retried instead of the whole batch of ten. |
-| **Tests** | 16 pytest cases against moto-mocked S3/DynamoDB/SES (`tests/`): presigned PUT bound to the declared size, lifetime clamping, the 100 MB cap, sanitisation cases, per-file PBKDF2 salts, info → fetch, expired/missing → 410, the password gate, the **atomic download cap**, best-effort SES, injection-safe disposition, and the reaper's REMOVE-only + partial-failure semantics. Run in CI. |
+| **Tests** | **24 pytest cases: 16 against moto-mocked S3/DynamoDB/SES and 8 end-to-end against LocalStack** (`tests/`). The moto set covers presigned PUT bound to the declared size, lifetime clamping, the 100 MB cap, sanitisation cases, per-file PBKDF2 salts, info → fetch, expired/missing → 410, the password gate, the **atomic download cap**, best-effort SES, injection-safe disposition, and the reaper's REMOVE-only + partial-failure semantics. The LocalStack set does the thing a mock structurally cannot: **actually sends HTTP to the presigned URL, with no credentials**, and checks that a tampered signature and an oversized body are both rejected by S3 rather than by our code. Both run in CI. |
 | **IaC** | checkov against a reviewed baseline (100 passed, 0 failed): the DLQ is now SSE-encrypted and the bucket aborts incomplete multipart uploads after a day (a closed tab mid-upload used to leave billed, invisible parts behind). |
 
 Deployed to the live functions on 2026-09-19 and smoke-tested end to end (issue → PUT → info → wrong password 401 → download with the encoded header → cap 410).

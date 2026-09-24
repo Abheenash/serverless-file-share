@@ -9,6 +9,16 @@ os.environ.update({
     "AWS_DEFAULT_REGION": "us-east-1", "AWS_ACCESS_KEY_ID": "testing", "AWS_SECRET_ACCESS_KEY": "testing",
     "BUCKET": "sfs-files-test", "TABLE": "sfs-metadata-test", "SES_SENDER": "noreply@example.com",
 })
+
+# moto does not intercept a client that was handed an explicit endpoint, so any
+# AWS_ENDPOINT_URL in the environment routes these mocked tests at a real address
+# and every one of them fails with EndpointConnectionError. A developer who has it
+# exported for LocalStack — or for anything else — would otherwise get sixteen
+# confusing failures in a suite that has nothing to do with it.
+# test_integration_localstack.py sets its own, scoped to that module.
+for _leaky in ("AWS_ENDPOINT_URL", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL_DYNAMODB",
+               "AWS_ENDPOINT_URL_SES"):
+    os.environ.pop(_leaky, None)
 ROOT = os.path.join(os.path.dirname(__file__), "..", "src")
 
 

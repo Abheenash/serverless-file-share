@@ -2,13 +2,42 @@ name: tests
 on: [push, pull_request]
 jobs:
   lambdas:
+    name: pytest (moto + real S3/DynamoDB/SES via LocalStack)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r tests/requirements.txt
+
+      # S3_SKIP_SIGNATURE_VALIDATION=0 is the setting that makes the presigned-URL
+      # tests mean anything. LocalStack's default is to accept any signature, and
+      # with that default the test that tampers with a signature and expects a 403
+      # gets a 200 instead — it fails loudly rather than passing vacuously, which
+      # is the right way round, but the flag is what makes it pass honestly.
+      - name: start LocalStack
+        run: |
+          docker run -d --name localstack -p 4566:4566 \
+            -e SERVICES=s3,dynamodb,dynamodbstreams,ses \
+            -e S3_SKIP_SIGNATURE_VALIDATION=0 \
+            localstack/localstack:4.9
+          for _ in $(seq 1 60); do
+            if curl -s http://127.0.0.1:4566/_localstack/health | grep -q '"s3"'; then
+              echo "LocalStack is up"; exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::LocalStack never became healthy"; docker logs localstack; exit 1
+
+      # REQUIRE_LOCALSTACK=1 makes a missing endpoint an error rather than eight
+      # quiet skips behind a green tick.
       - run: python -m pytest tests -q
+        env:
+          AWS_ENDPOINT_URL: http://127.0.0.1:4566
+          REQUIRE_LOCALSTACK: "1"
+
+      - if: always()
+        run: docker rm -f localstack || true
   iac-scan:
     runs-on: ubuntu-latest
     steps:
