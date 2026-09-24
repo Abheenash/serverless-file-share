@@ -20,6 +20,7 @@ Skipped when LocalStack is not running; CI sets `REQUIRE_LOCALSTACK=1` so a
 container that fails to start is an error rather than quiet skips.
 """
 
+import contextlib
 import importlib.util
 import json
 import os
@@ -98,10 +99,8 @@ def _provision():
     ddb = boto3.client("dynamodb", endpoint_url=ENDPOINT, region_name="us-east-1")
     ses = boto3.client("ses", endpoint_url=ENDPOINT, region_name="us-east-1")
     streams = boto3.client("dynamodbstreams", endpoint_url=ENDPOINT, region_name="us-east-1")
-    try:
+    with contextlib.suppress(s3.exceptions.ClientError):
         s3.create_bucket(Bucket=BUCKET)
-    except s3.exceptions.ClientError:
-        pass
     try:
         ddb.create_table(
             TableName=TABLE,
@@ -116,7 +115,7 @@ def _provision():
         )
         ddb.get_waiter("table_exists").wait(TableName=TABLE)
     except ddb.exceptions.ResourceInUseException:
-        pass
+        pass  # the table surviving a previous run is the expected case
     ses.verify_email_identity(EmailAddress=SENDER)
     return {"s3": s3, "ddb": ddb, "ses": ses, "streams": streams}
 
@@ -139,15 +138,26 @@ def _issue(issue, **body):
     return json.loads(r["body"])
 
 
+def _require_http(url: str) -> str:
+    """ruff's S310 flags urlopen on a non-literal URL, because urlopen will happily
+    open `file://` and read the local disk. The URL here is one our own Lambda just
+    signed, but "it comes from our code" is the reasoning behind most SSRF bugs, so
+    the scheme is checked rather than assumed — which is what the rule is asking
+    for, and what makes the noqa below honest rather than a silencer."""
+    if not url.startswith(("http://", "https://")):
+        raise ValueError(f"refusing to open a non-HTTP URL: {url[:40]!r}")
+    return url
+
+
 def _put(url: str, data: bytes) -> int:
     """Upload to a presigned URL with NO credentials — the way a browser does."""
-    req = urllib.request.Request(url, data=data, method="PUT")
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    req = urllib.request.Request(_require_http(url), data=data, method="PUT")  # noqa: S310 -- scheme checked
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 -- scheme checked above
         return resp.status
 
 
 def _get(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=15) as resp:
+    with urllib.request.urlopen(_require_http(url), timeout=15) as resp:  # noqa: S310 -- scheme checked above
         return resp.read()
 
 
