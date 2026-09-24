@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
@@ -36,11 +36,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: us-east-1
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
       # Real backend now that state is remote. The values come from repo
       # variables so no account id is committed.
       - name: terraform init (remote state)
@@ -64,11 +64,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: us-east-1
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
       # Real backend now that state is remote. The values come from repo
       # variables so no account id is committed.
       - name: terraform init (remote state)
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: terraform-linters/setup-tflint@v5
+      - uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: v0.64.0
       - name: tflint
@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with: { terraform_wrapper: false }
       - name: terraform test
         working-directory: ${{ github.workspace }}/terraform
