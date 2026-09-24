@@ -5,8 +5,8 @@ jobs:
     name: pytest (moto + real S3/DynamoDB/SES via LocalStack)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with: { python-version: "3.13" }
       - run: pip install -r tests/requirements.txt
 
@@ -31,7 +31,7 @@ jobs:
 
       # REQUIRE_LOCALSTACK=1 makes a missing endpoint an error rather than eight
       # quiet skips behind a green tick.
-      - run: python -m pytest tests -q
+      - run: python -m pytest tests -q --cov --cov-report=term-missing
         env:
           AWS_ENDPOINT_URL: http://127.0.0.1:4566
           REQUIRE_LOCALSTACK: "1"
@@ -41,8 +41,8 @@ jobs:
   iac-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: bridgecrewio/checkov-action@v12
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: bridgecrewio/checkov-action@444c9db6fa75e2d9c19ebf1fde7322089be9009e # v12
         with:
           config_file: .checkov.yaml
           quiet: true
@@ -55,8 +55,8 @@ jobs:
     name: ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3
         with:
           version: 0.16.8
           args: check --output-format github
@@ -70,12 +70,12 @@ jobs:
       security-events: write
       contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: github/codeql-action/init@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
         with:
           languages: python
           queries: security-and-quality
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
 
   # Blocks a PR that introduces a dependency with a known vulnerability or a
   # licence that does not fit. Renovate keeps things current; this stops a bad
@@ -91,8 +91,8 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/dependency-review-action@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
           comment-summary-in-pr: always
